@@ -46,11 +46,8 @@ func main() {
 		}
 	}
 
-	// Now listen interactively for the user to do row operations.
-	// Must support:
-	// mul row scalar
-	// add row row scalar
-	// swap row row
+
+	// Now we have the coefficients matrix, so we can do row operations
 
 	for {
 		print(coefficients)
