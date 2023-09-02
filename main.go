@@ -14,16 +14,32 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter the number of equations: ")
-	equations, _ := reader.ReadString('\n')
+	equations, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	equations = strings.TrimSuffix(equations, "\n")
 
 	fmt.Print("Enter the number of variables: ")
-	variables, _ := reader.ReadString('\n')
+	variables, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	variables = strings.TrimSuffix(variables, "\n")
 
 	// convert the strings to integers
-	equationsInt, _ := strconv.Atoi(equations)
-	variablesInt, _ := strconv.Atoi(variables)
+	equationsInt, err := strconv.Atoi(equations)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	variablesInt, err := strconv.Atoi(variables)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	variablesInt += 1 // add one for the augmented part
 
 	// initialize the coefficients matrix
@@ -34,7 +50,11 @@ func main() {
 	// read in one row of coefficients at a time
 	for i := 0; i < equationsInt; i++ {
 		fmt.Printf("Enter the coefficients for equation %d: ", i+1)
-		coefficientsString, _ := reader.ReadString('\n')
+		coefficientsString, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		coefficientsString = strings.TrimSuffix(coefficientsString, "\n")
 
 		// split the string into a slice of strings
@@ -42,7 +62,11 @@ func main() {
 
 		// convert the strings to floats
 		for j := 0; j < variablesInt; j++ {
-			coefficients[i][j], _ = strconv.ParseFloat(coefficientsSlice[j], 64)
+			coefficients[i][j], err = strconv.ParseFloat(coefficientsSlice[j], 64)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -52,7 +76,12 @@ func main() {
 		print(coefficients)
 
 		fmt.Print("Enter a row operation: ")
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
 		input = strings.TrimSuffix(input, "\n")
 
 		var row1, row2 int
