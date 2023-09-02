@@ -70,9 +70,13 @@ func main() {
 			// parse the rows and scalar
 			fmt.Sscanf(input, "add %d %d %f", &row1, &row2, &scalar)
 			coefficients = add(coefficients, row1-1, row2-1, scalar)
+		} else if strings.HasPrefix(input, "sub") {
+			// parse the rows and scalar
+			fmt.Sscanf(input, "sub %d %d %f", &row1, &row2, &scalar)
+			coefficients = add(coefficients, row1-1, row2-1, -scalar)
 		} else if strings.HasPrefix(input, "swap") {
 			// parse the rows
-			fmt.Sscanf(input, "swap %d  %d", &row1, &row2)
+			fmt.Sscanf(input, "swap %d %d", &row1, &row2)
 			coefficients = swap(coefficients, row1-1, row2-1)
 		} else if strings.HasPrefix(input, "quit") {
 			os.Exit(0)
