@@ -46,7 +46,6 @@ func main() {
 		}
 	}
 
-
 	// Now we have the coefficients matrix, so we can do row operations
 
 	for {
