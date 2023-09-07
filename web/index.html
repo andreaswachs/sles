@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Interactive Systems of Linear equations solver</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- Katex dependencies -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.css" integrity="sha384-pRsDYiLLocCzWnUN/YEr9TBTTaZOUi5x8adKfqi6Qt44lDaFkoP++x1j2ohSMtdf" crossorigin="anonymous">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.js" integrity="sha384-tMzugJpfLv7v0f+KXzNMqNCC6sVzLMM3sCnZDgzy0lcO/0h3sAkEBg/URFcV0JpE" crossorigin="anonymous"></script>
+
+        <!-- KaTeX font preloading -->
+        <script>
+            window.WebFontConfig = {
+                custom: {
+                    families: ['KaTeX_AMS', 'KaTeX_Caligraphic:n4,n7', 'KaTeX_Fraktur:n4,n7',
+                        'KaTeX_Main:n4,n7,i4,i7', 'KaTeX_Math:i4,i7', 'KaTeX_Script',
+                        'KaTeX_SansSerif:n4,n7,i4', 'KaTeX_Size1', 'KaTeX_Size2', 'KaTeX_Size3',
+                        'KaTeX_Size4', 'KaTeX_Typewriter'],
+                },
+            };
+        </script>
+        <script defer src="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.js" integrity="sha256-4O4pS1SH31ZqrSO2A/2QJTVjTPqVe+jnYgOWUVr7EEc=" crossorigin="anonymous"></script>
+        <script>
+
+        </script>
+    </head>
+    <body>
+        <main>
+            <h1>Interactive Systems of Linear equations solver using coefficient/augmented matrices</h1>
+        </main>
+
+        <section>
+            <h2>Actions</h2>
+            <button id="new">New</button>
+            <button id="to-latex">To LaTeX</button>
+            <button id="save-json">Save JSON</button>
+            <button id="load-json">Load JSON</button>
+        </section>
+
+        <section >
+            <!-- This is the view of the matrix solving area. -->
+            <div id="matrix-solve-area">
+            </div>
+
+            <div id="matrix-row-operations-input">
+                <label for="row-operations-input">Row operation: </label>
+                <input type="text" id="row-operations-input">
+            </div>
+        </section>
+
+        <script>
+            const matrixModel = {
+                "rows": 0,
+                "cols": 0,
+                "startingMatrix": [],
+                "currentMatrix": [],
+                "operationsLog": [],
+            };
+
+            var currentMatrix = {};
+
+            // Add click event listener on the new button
+            document.getElementById("new").addEventListener("click", (event) => {
+                console.debug("new matrix")
+                // preventDefault
+                event.preventDefault();
+
+                // Create a new matrix
+                let modal = newMatrixModal();
+                document.body.appendChild(modal);
+                modal.style.display = "block";
+            });
+
+            document.getElementById("save-json").addEventListener("click", (event) => {
+                // preventDefault
+                event.preventDefault();
+
+                downloadObjectAsJson(currentMatrix, "matrix");
+            });
+
+            document.getElementById("load-json").addEventListener("click", (event) => {
+                // preventDefault
+                event.preventDefault();
+
+                loadMatrix();
+            });
+
+            document.getElementById("row-operations-input").addEventListener("keypress", (event) => {
+                if (event.key == 'Enter') {
+                    input = document.getElementById("row-operations-input").value;
+
+                    // Split the input on spaces
+                    const inputBuffer = input.split(" ");
+                    const op = inputBuffer[0];
+
+                    let row1 = 0;
+                    let row2 = 0;
+
+                    let factor = 1;
+                    switch(op) {
+                        case "add":
+                            console.log("add")
+                            // Add row1 to row2
+                            // row1 and row2 are 1-indexed (adjust for 0-indexing)
+
+                            row1 = parseInt(inputBuffer[1]) - 1;
+                            row2 = parseInt(inputBuffer[2]) - 1;
+
+                            factor = 1
+                            if (inputBuffer.length >= 4) {
+                                factor = parseInt(inputBuffer[3]);
+                            }
+
+                            operationAdd(row1, row2, factor);
+                            renderLatestMatrix();
+                            break;
+                        case "mul":
+                            console.log("mul")
+                            // Multiply row by factor
+                            // row is 1-indexed (adjust for 0-indexing)
+                            // factor is a float
+
+                            let row = parseInt(inputBuffer[1]) - 1;
+                            factor = 1
+                            if (inputBuffer.length >= 3) {
+                                factor = parseInt(inputBuffer[2]);
+                            }
+
+                            operationMul(row, factor);
+                            renderLatestMatrix();
+                            break;
+                        case "swap":
+                            console.log("swap")
+                            // Swap row1 and row2
+                            // row1 and row2 are 1-indexed (adjust for 0-indexing)
+
+                            row1 = parseInt(inputBuffer[1]) - 1;
+                            row2 = parseInt(inputBuffer[2]) - 1;
+
+                            operationSwap(row1, row2);
+                            renderLatestMatrix();
+                            break;
+                    }
+                }
+            });
+
+            function operationSwap(row1, row2) {
+                // Swap row1 and row2
+                // row1 and row2 are 0-indexed
+
+                let buffer = currentMatrix.currentMatrix[row1];
+                currentMatrix.currentMatrix[row1] = currentMatrix.currentMatrix[row2];
+                currentMatrix.currentMatrix[row2] = buffer;
+
+                // Add the operation to the log
+                currentMatrix.operationsLog.push("swap " + row1 + " " + row2);
+
+                renderOperation(`R_${row1 + 1} \\leftrightarrow R_${row2 + 1}`);
+            }
+
+            function operationMul(row, factor) {
+                // Multiply row by factor
+                // row is 0-indexed
+                // factor is a float
+
+                for (let i = 0; i < currentMatrix.cols; i++) {
+                    // Parse the value as a float, do the operation
+                    let value = parseFloat(currentMatrix.currentMatrix[row][i]);
+
+                    currentMatrix.currentMatrix[row][i] = value * factor;
+                }
+
+                // Add the operation to the log
+                currentMatrix.operationsLog.push("mul " + row + " " + factor);
+
+                renderOperation(`${factor}R_${row + 1} \\rightarrow R_${row + 1}`);
+            }
+
+            function operationAdd(row1, row2, factor) {
+                // Add row1 to row2
+                // row1 and row2 are 0-indexed
+                // row1 and row2 are floats
+                // factor is a float
+
+                for (let i = 0; i < currentMatrix.cols; i++) {
+                    // Parse the values as floats, do the operation
+                    let row1Value = parseFloat(currentMatrix.currentMatrix[row1][i]);
+                    let row2Value = parseFloat(currentMatrix.currentMatrix[row2][i]);
+
+                    currentMatrix.currentMatrix[row2][i] = row2Value + (row1Value * factor);
+                }
+
+                // Add the operation to the log
+                currentMatrix.operationsLog.push("add " + row1 + " " + row2 + " " + factor);
+
+                renderOperation(`R_${row1 + 1} + ${factor}R_${row2 + 1} \\rightarrow R_${row1 + 1}`);
+            }
+
+            function renderLatestMatrix() {
+                renderMatrix(currentMatrix, "matrix-solve-area");
+            }
+
+            function renderOperation(operation) {
+                // Render an operation to the DOM
+
+                let area = document.getElementById("matrix-solve-area");
+
+                let newParagraph = document.createElement("p");
+        
+
+                newParagraph.innerHTML = katex.renderToString(operation, {
+                    throwOnError: true,
+                });
+
+                area.appendChild(newParagraph);
+            }
+
+            function newMatrixModal() {
+                // Create a modal to get the dimensions of the new matrix.
+
+                let modal = document.createElement("div");
+                modal.id = "new-matrix-modal";
+
+                let modalContent = document.createElement("div");
+                modalContent.id = "new-matrix-modal-content";
+
+                let modalHeader = document.createElement("div");
+                modalHeader.id = "new-matrix-modal-header";
+
+                let modalBody = document.createElement("div");
+                modalBody.id = "new-matrix-modal-body";
+
+                let modalFooter = document.createElement("div");
+                modalFooter.id = "new-matrix-modal-footer";
+
+                let modalTitle = document.createElement("h3");
+                modalTitle.id = "new-matrix-modal-title";
+                modalTitle.innerHTML = "New Matrix";
+
+                let modalClose = document.createElement("span");
+                modalClose.id = "new-matrix-modal-close";
+                modalClose.innerHTML = "&times;";
+
+                let modalMatrixContentsLabel = document.createElement("label");
+                modalMatrixContentsLabel.id = "new-matrix-modal-contents-label";
+                modalMatrixContentsLabel.innerHTML = "Matrix contents (space separated values): ";
+
+                let modalMatrixContents = document.createElement("textarea");
+                modalMatrixContents.id = "new-matrix-modal-contents";
+                modalMatrixContents.rows = 10;
+                modalMatrixContents.cols = 10;
+
+                let modalSubmit = document.createElement("button");
+                modalSubmit.id = "new-matrix-modal-submit";
+                modalSubmit.innerHTML = "Submit";
+                modalSubmit.onclick = (event) => {
+                    // preventDefault
+                    event.preventDefault();
+
+                    // Split contents on spaces and newlines
+                    let contents = document.getElementById("new-matrix-modal-contents").value;
+
+                    console.log("contents", contents);
+                    let rows = contents.split("\n");
+                    let matrixBuffer = [];
+
+                    for (let i = 0; i < rows.length; i++) {
+                        matrixBuffer[i] = rows[i].split(" ");
+                    }
+
+                    let matrix = newMatrix(rows.length, rows[0].split(" ").length, matrixBuffer);
+
+                    console.log(JSON.stringify(matrix));
+                    currentMatrix = matrix;
+
+                    // Delete modal
+                    modal.remove();
+
+                    clearSolveArea();
+
+                    // Trigger render
+                    renderMatrix(matrix, "matrix-solve-area");
+                };
+
+                modalHeader.appendChild(modalTitle);
+                modalHeader.appendChild(modalClose);
+
+                modalBody.appendChild(modalMatrixContentsLabel);
+                modalBody.appendChild(modalMatrixContents);
+
+                modalFooter.appendChild(modalSubmit);
+
+                modalContent.appendChild(modalHeader);
+                modalContent.appendChild(modalBody);
+                modalContent.appendChild(modalFooter);
+
+                modal.appendChild(modalContent);
+                modal.appendChild(modalMatrixContents);
+
+                return modal;
+            };
+
+            function clearSolveArea() {
+         document.getElementById("matrix-solve-area").innerHTML = "";
+
+            }
+
+            const newMatrix = (row, cols, matrix) => {
+                // Make a deep copy of matrixModel, assign it to currentMatrix
+                // and then render the matrix.
+                let buffer = JSON.parse(JSON.stringify(matrixModel));
+
+                buffer.rows = matrix.length;
+                buffer.cols = matrix[0].length;
+                buffer.startingMatrix = matrix;
+                buffer.currentMatrix = matrix;
+
+                return buffer;
+            };
+
+            const setMatrix = (matrix) => {
+                currentMatrix = matrix;
+            };
+
+            const saveMatrix = () => {
+                // Save the current matrix to a JSON file.
+
+                let data = JSON.stringify(currentMatrix);
+                let blob = new Blob([data], {type: "application/json"});
+                let url = URL.createObjectURL(blob);
+
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = "matrix.json";
+                a.click();
+            };
+
+            const loadMatrix = () => {
+                // Load a matrix from a JSON file.
+
+                let input = document.createElement("input");
+                input.type = "file";
+                input.accept = "application/json";
+
+                input.onchange = (event) => {
+                    let file = event.target.files[0];
+                    let reader = new FileReader();
+
+                    reader.onload = (event) => {
+                        let data = event.target.result;
+                        let matrix = JSON.parse(data);
+
+
+                        clearSolveArea();
+                        currentMatrix = matrix;
+                        renderMatrix(matrix, "matrix-solve-area");
+                    };
+
+                    reader.readAsText(file);
+                };
+
+                input.click();
+            };
+
+            const renderMatrix = (matrix, outputNode) => {
+                // Render the matrix to the DOM.
+
+                let area = document.getElementById(outputNode);
+                console.log("rendering matrix to DOM");
+                console.log(JSON.stringify(matrix));
+
+                // Add a new instance of the matrix
+                let newParagraph = document.createElement("p");
+
+                // Write the latex formatted matrix to the new element
+                buffer = "\\begin{bmatrix}\n";
+
+                for (let i = 0; i < matrix.currentMatrix.length; i++) {
+                    console.log("traverse row " + i);
+                    for (let j = 0; j < matrix.currentMatrix[i].length; j++) {
+                        console.log("traverse col " + j);
+                        if (j != 0 && j < matrix.currentMatrix[i].length) {
+                            buffer += " & ";
+                        }
+                        buffer += matrix.currentMatrix[i][j];
+                    }
+                    if (i != matrix.currentMatrix.length - 1) {
+                        buffer += "\\\\\n";
+                    }
+                }
+
+                buffer += "\n\\end{bmatrix}";
+
+                console.log(buffer);
+
+                asHtml = katex.renderToString(buffer, {
+                    throwOnError: true,
+                });
+
+                console.log("rendered matrix to latex");
+
+                newParagraph.innerHTML = asHtml;
+
+                area.appendChild(newParagraph);
+            };
+
+
+
+            function downloadObjectAsJson(exportObj, exportName){
+                var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+                var downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href",     dataStr);
+                downloadAnchorNode.setAttribute("download", exportName + ".json");
+                document.body.appendChild(downloadAnchorNode); // required for firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            }
+        </script>
+    </body>
