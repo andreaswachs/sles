@@ -39,14 +39,15 @@
         </section>
 
         <section >
-            <!-- This is the view of the matrix solving area. -->
-            <div id="matrix-solve-area">
-            </div>
-
             <div id="matrix-row-operations-input">
                 <label for="row-operations-input">Row operation: </label>
                 <input type="text" id="row-operations-input">
             </div>
+
+            <!-- This is the view of the matrix solving area. -->
+            <div id="matrix-solve-area">
+            </div>
+
         </section>
 
         <script>
@@ -207,7 +208,7 @@
                 let area = document.getElementById("matrix-solve-area");
 
                 let newParagraph = document.createElement("p");
-        
+
 
                 newParagraph.innerHTML = katex.renderToString(operation, {
                     throwOnError: true,
@@ -302,7 +303,7 @@
             };
 
             function clearSolveArea() {
-         document.getElementById("matrix-solve-area").innerHTML = "";
+                document.getElementById("matrix-solve-area").innerHTML = "";
 
             }
 
