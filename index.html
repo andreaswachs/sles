@@ -57,9 +57,16 @@
                 "startingMatrix": [],
                 "currentMatrix": [],
                 "operationsLog": [],
+                "renderLog": [],
             };
 
             var currentMatrix = {};
+
+            document.getElementById("to-latex").addEventListener("click", (event) => {
+                console.debug("exporting latex from eventlistener");
+
+                exportLatex();
+            });
 
             // Add click event listener on the new button
             document.getElementById("new").addEventListener("click", (event) => {
@@ -114,7 +121,6 @@
                             }
 
                             operationAdd(row1, row2, factor);
-                            renderLatestMatrix();
                             break;
                         case "mul":
                             console.log("mul")
@@ -129,7 +135,6 @@
                             }
 
                             operationMul(row, factor);
-                            renderLatestMatrix();
                             break;
                         case "swap":
                             console.log("swap")
@@ -140,11 +145,36 @@
                             row2 = parseInt(inputBuffer[2]) - 1;
 
                             operationSwap(row1, row2);
-                            renderLatestMatrix();
+                            break;
+                        default:
+                            console.log("invalid operation");
                             break;
                     }
+
+                    renderLatestMatrix();
+
                 }
+
             });
+
+            function isString(variable) { 
+                return typeof (variable) === 'string'; 
+            }
+
+            function replaceLastOccurrenceInString(input, find, replaceWith) {
+                if (!isString(input) || !isString(find) || !isString(replaceWith)) {
+                    // returns input on invalid arguments
+                    return input;
+                }
+
+                const lastIndex = input.lastIndexOf(find);
+                if (lastIndex < 0) {
+                    return input;
+                }
+
+                return input.substr(0, lastIndex) + replaceWith + input.substr(lastIndex + find.length);
+            }
+
 
             function operationSwap(row1, row2) {
                 // Swap row1 and row2
@@ -153,9 +183,6 @@
                 let buffer = currentMatrix.currentMatrix[row1];
                 currentMatrix.currentMatrix[row1] = currentMatrix.currentMatrix[row2];
                 currentMatrix.currentMatrix[row2] = buffer;
-
-                // Add the operation to the log
-                currentMatrix.operationsLog.push("swap " + row1 + " " + row2);
 
                 renderOperation(`R_${row1 + 1} \\leftrightarrow R_${row2 + 1}`);
             }
@@ -171,9 +198,6 @@
 
                     currentMatrix.currentMatrix[row][i] = value * factor;
                 }
-
-                // Add the operation to the log
-                currentMatrix.operationsLog.push("mul " + row + " " + factor);
 
                 renderOperation(`${factor}R_${row + 1} \\rightarrow R_${row + 1}`);
             }
@@ -191,9 +215,6 @@
 
                     currentMatrix.currentMatrix[row2][i] = row2Value + (row1Value * factor);
                 }
-
-                // Add the operation to the log
-                currentMatrix.operationsLog.push("add " + row1 + " " + row2 + " " + factor);
 
                 renderOperation(`R_${row1 + 1} + ${factor}R_${row2 + 1} \\rightarrow R_${row1 + 1}`);
             }
@@ -213,6 +234,9 @@
                 newParagraph.innerHTML = katex.renderToString(operation, {
                     throwOnError: true,
                 });
+
+                // Push the render output to the log
+                currentMatrix.operationsLog.push(operation);
 
                 area.appendChild(newParagraph);
             }
@@ -367,45 +391,86 @@
                 // Render the matrix to the DOM.
 
                 let area = document.getElementById(outputNode);
-                console.log("rendering matrix to DOM");
-                console.log(JSON.stringify(matrix));
 
                 // Add a new instance of the matrix
                 let newParagraph = document.createElement("p");
 
                 // Write the latex formatted matrix to the new element
-                buffer = "\\begin{bmatrix}\n";
+                buffer = "\\begin{bmatrix}";
 
                 for (let i = 0; i < matrix.currentMatrix.length; i++) {
-                    console.log("traverse row " + i);
                     for (let j = 0; j < matrix.currentMatrix[i].length; j++) {
-                        console.log("traverse col " + j);
                         if (j != 0 && j < matrix.currentMatrix[i].length) {
                             buffer += " & ";
                         }
                         buffer += matrix.currentMatrix[i][j];
                     }
                     if (i != matrix.currentMatrix.length - 1) {
-                        buffer += "\\\\\n";
+                        buffer += "\\\\ ";
                     }
                 }
 
-                buffer += "\n\\end{bmatrix}";
+                buffer += "\\end{bmatrix}";
 
-                console.log(buffer);
+                buffer = buffer.replace("\n", "");
 
                 asHtml = katex.renderToString(buffer, {
                     throwOnError: true,
                 });
 
-                console.log("rendered matrix to latex");
+
+                if (currentMatrix.operationsLog.length > 0) {
+                    // Merge the current operations log entry with the current generated matrix
+                    let opBuffer = currentMatrix.operationsLog[0];
+
+                    let prefixBuffer = "";
+
+                    if (currentMatrix.renderLog.length > 0) {
+                        prefixBuffer = "&\\curly ";
+                    }
+
+                    currentMatrix.renderLog.push(`${prefixBuffer}${buffer} \\explain{${opBuffer}} \\\\\n`);
+                } else {
+                    currentMatrix.renderLog.push(buffer);
+                }
 
                 newParagraph.innerHTML = asHtml;
 
                 area.appendChild(newParagraph);
             };
 
+            function exportLatex() {
+                console.debug("exporting latex");
+                let buffer = "\\begin{align}\n";
 
+                buffer += currentMatrix.renderLog[0];
+
+                buffer += currentMatrix.renderLog.slice(1).join("\\\\\n");
+
+                buffer = replaceLastOccurrenceInString(buffer, "\\\\\n", "\n");
+
+                buffer += "\\end{align}";
+
+                // Remove lines that are lines of only "\\"
+                buffer = buffer.replace(/^\\\\\n$/m, "");
+
+                console.debug(buffer);
+
+                // TODO: remove lines with only // and maybe wrong opeartions being put in??
+
+                downloadStringAsLatex(buffer, "matrix");
+            }
+
+
+            function downloadStringAsLatex(exportStr, exportName){
+                var dataStr = "data:text/latex;charset=utf-8," + encodeURIComponent(exportStr);
+                var downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href",     dataStr);
+                downloadAnchorNode.setAttribute("download", exportName + ".tex");
+                document.body.appendChild(downloadAnchorNode); // required for firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            }
 
             function downloadObjectAsJson(exportObj, exportName){
                 var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
