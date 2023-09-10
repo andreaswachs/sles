@@ -184,7 +184,7 @@
                 currentMatrix.currentMatrix[row1] = currentMatrix.currentMatrix[row2];
                 currentMatrix.currentMatrix[row2] = buffer;
 
-                renderOperation(`R_${row1 + 1} \\leftrightarrow R_${row2 + 1}`);
+                renderOperation(`R_{${row1 + 1}} \\leftrightarrow R_{${row2 + 1}}`);
             }
 
             function operationMul(row, factor) {
@@ -199,7 +199,7 @@
                     currentMatrix.currentMatrix[row][i] = value * factor;
                 }
 
-                renderOperation(`${factor}R_${row + 1} \\rightarrow R_${row + 1}`);
+                renderOperation(`${factor}R_{${row + 1}} \\rightarrow R_{${row + 1}}`);
             }
 
             function operationAdd(row1, row2, factor) {
@@ -216,7 +216,7 @@
                     currentMatrix.currentMatrix[row2][i] = row2Value + (row1Value * factor);
                 }
 
-                renderOperation(`R_${row1 + 1} + ${factor}R_${row2 + 1} \\rightarrow R_${row1 + 1}`);
+                renderOperation(`R_{${row1 + 1}} + ${factor}R_{${row2 + 1}} \\rightarrow R_{${row1 + 1}}`);
             }
 
             function renderLatestMatrix() {
@@ -421,7 +421,7 @@
 
                 if (currentMatrix.operationsLog.length > 0) {
                     // Merge the current operations log entry with the current generated matrix
-                    let opBuffer = currentMatrix.operationsLog[0];
+                    let opBuffer = currentMatrix.operationsLog[currentMatrix.operationsLog.length - 1];
 
                     let prefixBuffer = "";
 
@@ -429,7 +429,7 @@
                         prefixBuffer = "&\\curly ";
                     }
 
-                    currentMatrix.renderLog.push(`${prefixBuffer}${buffer} \\explain{${opBuffer}} \\\\\n`);
+                    currentMatrix.renderLog.push(`${prefixBuffer}${buffer} \\explain{${opBuffer}} \\\\`);
                 } else {
                     currentMatrix.renderLog.push(buffer);
                 }
@@ -440,23 +440,14 @@
             };
 
             function exportLatex() {
-                console.debug("exporting latex");
                 let buffer = "\\begin{align}\n";
 
-                buffer += currentMatrix.renderLog[0];
+                buffer += currentMatrix.renderLog.map(v => `\t${v}`).join("\n");
 
-                buffer += currentMatrix.renderLog.slice(1).join("\\\\\n");
+                buffer += "\n\\end{align}";
 
-                buffer = replaceLastOccurrenceInString(buffer, "\\\\\n", "\n");
-
-                buffer += "\\end{align}";
-
-                // Remove lines that are lines of only "\\"
-                buffer = buffer.replace(/^\\\\\n$/m, "");
-
-                console.debug(buffer);
-
-                // TODO: remove lines with only // and maybe wrong opeartions being put in??
+                // Remove last '\\'
+                buffer = replaceLastOccurrenceInString(buffer, "\\\\", "");
 
                 downloadStringAsLatex(buffer, "matrix");
             }
