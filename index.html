@@ -263,6 +263,20 @@
 
                             operationMul(row, factor);
                             break;
+                        case "inv":
+                            console.log("inv")
+                            // Invert the row, effectively doing mul 1/x * row
+                            // row is 1-indexed (adjust for 0-indexing)
+                            // factor is a float, the denominator of the fraction
+
+                            row1 = parseInt(inputBuffer[1]) - 1;
+                            factor = 1
+                            if (inputBuffer.length >= 3) {
+                                factor = parseInt(inputBuffer[2]);
+                            }
+
+                            invertOperation(row1, factor);
+                            break;
                         case "swap":
                             console.log("swap")
                             // Swap row1 and row2
@@ -352,6 +366,21 @@
                 }
 
                 return input.substr(0, lastIndex) + replaceWith + input.substr(lastIndex + find.length);
+            }
+
+            function invertOperation(row, denominator) {
+                // Invert the row, effectively doing mul 1/x * row
+                // row is 0-indexed
+                // factor is a float, the denominator of the fraction
+
+                for (let i = 0; i < currentMatrix.cols; i++) {
+                    // Parse the value as a float, do the operation
+                    let value = parseFloat(currentMatrix.currentMatrix[row][i]);
+
+                    currentMatrix.currentMatrix[row][i] = value / denominator;
+                }
+
+                renderOperation(`\\frac{1}{${denominator}}R_{${row + 1}} \\rightarrow R_{${row + 1}}`);
             }
 
 
