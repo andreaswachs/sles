@@ -240,11 +240,11 @@
                             // row1 and row2 are 1-indexed (adjust for 0-indexing)
 
                             row1 = parseInt(inputBuffer[1]) - 1;
-                            row2 = parseInt(inputBuffer[2]) - 1;
+                            row2 = parseFloat(inputBuffer[2]) - 1;
 
                             factor = 1
                             if (inputBuffer.length >= 4) {
-                                factor = parseInt(inputBuffer[3]);
+                                factor = parseFloat(inputBuffer[3]);
                             }
 
                             operationAdd(row1, row2, factor);
@@ -255,7 +255,7 @@
                             // row is 1-indexed (adjust for 0-indexing)
                             // factor is a float
 
-                            let row = parseInt(inputBuffer[1]) - 1;
+                            let row = parseFloat(inputBuffer[1]) - 1;
                             factor = 1
                             if (inputBuffer.length >= 3) {
                                 factor = parseInt(inputBuffer[2]);
@@ -269,7 +269,7 @@
                             // row is 1-indexed (adjust for 0-indexing)
                             // factor is a float, the denominator of the fraction
 
-                            row1 = parseInt(inputBuffer[1]) - 1;
+                            row1 = parseFloat(inputBuffer[1]) - 1;
                             factor = 1
                             if (inputBuffer.length >= 3) {
                                 factor = parseInt(inputBuffer[2]);
@@ -425,8 +425,16 @@
                     let row1Value = parseFloat(currentMatrix.currentMatrix[row1][i]);
                     let row2Value = parseFloat(currentMatrix.currentMatrix[row2][i]);
 
+                    // Check if any of the two row values are NaN
+                    if (isNaN(row1Value) || isNaN(row2Value)) {
+                        // Just report it
+                        console.log(JSON.stringify(currentMatrix));
+                        console.log("NaN detected in row1Value or row2Value: " + row1Value + " " + row2Value);
+                    }
+
                     // Do the operation and assign the result to row1
                     currentMatrix.currentMatrix[row1][i] = row1Value + (row2Value * factor);
+                    console.log("Calculated: " + row1Value + " + (" + row2Value + " * " + factor + ") = " + currentMatrix.currentMatrix[row1][i]);
                 }
 
                 renderOperation(`R_{${row1 + 1}} + ${factor}R_{${row2 + 1}} \\rightarrow R_{${row1 + 1}}`);
